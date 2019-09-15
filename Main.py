@@ -6,6 +6,6 @@ input_url = "https://news.ycombinator.com/"
 
 scraper = Scraper
 
-scraper.run(input_url, 10, True)
+scraper.run(input_url, 40, False, False)
 
 

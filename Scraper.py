@@ -13,16 +13,21 @@ max_result_count = 100
 verbose = False
 
 
+# Flag to determine whether ? and # links should be filtered
+just_urls = True
+
+
 # Function used to format a found url
 # It takes the found url, and the URL of the page where it was found
 # It removes ? and # extensions, deletes mailto links, concatenates reference urls with the parent url,
 # adds a forward slash to the end of urls not ending in an extension, and replaces any double forward slashes
 def format_url(found_url, root_url):
-    # Remove ? and # extensions or cases where url is just '/'
-    found_url = re.sub(r'(#.*)|(\?.*)|(^/$)', '', found_url)
+    # Remove ? and # extensions
+    if just_urls:
+        found_url = re.sub(r'(#.*)|(\?.*)', '', found_url)
 
-    # Remove mailto links
-    if re.search(r'^mailto', found_url):
+    # Remove mailto links or cases where url is just '/'
+    if re.search(r'(^mailto)|(^/$)', found_url):
         found_url = ""
 
     if len(found_url) > 0:
@@ -55,8 +60,8 @@ def scrape(root_url):
     if link_object.valid:
 
         # search
-        # (?:<a ).*href=[\"|'](.+?(?=[\'|\"])) captures link in capture group 1
-        matches_a_group = re.findall(r'(?:<a ).*href=[\"|\'](.+?(?=[\'|\"]))', link_object.html)
+        # (?<=<a ).+?(?<=href=['|\"])(.+?(?=['|\"])) working captures link in capture group 1
+        matches_a_group = re.findall(r'(?<=<a ).+?(?<=href=[\'|\"])(.+?(?=[\'|\"]))', link_object.html)
         matches_href = []
 
         # add all matches to dictionary or adjust their find count
@@ -109,25 +114,17 @@ def first_url_check(url):
         return False
 
 
-# Run the program with default settings using the provided url
-def run(url):
-    run(url, max_result_count, verbose)
-
-
-# Run the program with the provided url
-# Return the provided number of unique results
-def run(url, result_count):
-    run(url, result_count, verbose)
-
-
 # Run the program with the provided url
 # Return the provided number of unique results
 # verbose_flag used to set print detail level
-def run(url, result_count, verbose_flag):
+# just_url_flag used to set whether search should filter # and ? extensions to urls
+def run(url, result_count, verbose_flag, just_url_flag):
     global max_result_count
     max_result_count = result_count
     global verbose
     verbose = verbose_flag
+    global just_urls
+    just_urls = just_url_flag
 
     start = time.time()
     if first_url_check(url):
