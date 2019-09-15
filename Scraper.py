@@ -12,7 +12,6 @@ max_result_count = 100
 # Flag used to determine whether whole LinkObject should be printed
 verbose = False
 
-
 # Flag to determine whether ? and # links should be filtered
 just_urls = True
 
@@ -21,7 +20,7 @@ just_urls = True
 # It takes the found url, and the URL of the page where it was found
 # It removes ? and # extensions, deletes mailto links, concatenates reference urls with the parent url,
 # adds a forward slash to the end of urls not ending in an extension, and replaces any double forward slashes
-def format_url(found_url, root_url):
+def format_url(found_url, parent_url):
     # Remove ? and # extensions
     if just_urls:
         found_url = re.sub(r'(#.*)|(\?.*)', '', found_url)
@@ -30,21 +29,25 @@ def format_url(found_url, root_url):
     if re.search(r'(^mailto)|(^/$)', found_url):
         found_url = ""
 
+    # remove any slashes at the end of the url
+    found_url = re.sub(r'/$', "", found_url)
+
     if len(found_url) > 0:
 
-        # If url is subdirectory link concatenate with parent url - needs work
+        # If url is subdirectory link concatenate with parent url
         sub_match = re.match(r'(^http)|(^www.)', found_url)
-        if not sub_match:
-            found_url = root_url + found_url
+        root_url = ""
 
-        # Add forward slash to end of url if ending in .com or a path that doesn't end in a slash
-        # (.com)$ finds strings ending in .com
-        # ((?<=/)[^.]+[^/]$) finds strings not ending in a filename extension
-        if re.search(r'(.com)$|((?<=/)[^.]+[^/]$)', found_url):
-            found_url += "/"
+        if not sub_match:
+            search = re.findall(r'^.+?(?<=[^:/])/', parent_url)
+            if len(search) > 0:
+                root_url = search[0]
+            else:
+                root_url = re.findall(r'^.+?(?<=[^/])$', parent_url)[0]
+            found_url = root_url + "/" + found_url
 
         # Replace any double forward slashes not following http: or https:
-        found_url = re.sub(r'(?<=[^:])//', "/", found_url)
+        found_url = re.sub(r'(?<=[^:])//+', "/", found_url)
 
     return found_url
 
@@ -84,10 +87,12 @@ def scrape(root_url):
         link_object.set_scraped(True)
 
         # depth first scrape
-        if len(link_dict) < max_result_count:
-            for match in matches_href:
-                if not link_dict[match].scraped:
-                    scrape(match)
+
+        for match in matches_href:
+            if not link_dict[match].scraped and len(link_dict) < max_result_count:
+                scrape(match)
+    else:
+        pass
 
 
 # Function to print each item in the dictionary of found links
@@ -127,6 +132,8 @@ def run(url, result_count, verbose_flag, just_url_flag):
     just_urls = just_url_flag
 
     start = time.time()
+
+    url = format_url(url, "")
     if first_url_check(url):
         scrape(url)
         finish()

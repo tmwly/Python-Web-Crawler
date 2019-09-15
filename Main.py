@@ -1,11 +1,10 @@
 import Scraper
 
 # inputURL = input("Input URL\n")
-input_url = "https://news.ycombinator.com/"
-#input_url = "https://www.bbc.com/"
+input_url = "https://news.ycombinator.com/news/"
+#input_url = "https://www.bbc.com"
 
 scraper = Scraper
-
-scraper.run(input_url, 40, False, False)
+scraper.run(input_url, 1000, False, True)
 
 
