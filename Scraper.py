@@ -3,33 +3,42 @@ import re
 from LinkObject import LinkObject
 import time
 
+# The dictionary containing all unique found links and their LinkObject
 link_dict = {}
-max_result_count = 50
+
+# The number of unique links that will be searched for
+max_result_count = 100
+
+# Flag used to determine whether whole LinkObject should be printed
 verbose = False
 
 
+# Function used to format a found url
+# It takes the found url, and the URL of the page where it was found
+# It removes ? and # extensions, deletes mailto links, concatenates reference urls with the parent url,
+# adds a forward slash to the end of urls not ending in an extension, and replaces any double forward slashes
 def format_url(found_url, root_url):
-    # remove ? and # extensions or cases where url is just '/'
+    # Remove ? and # extensions or cases where url is just '/'
     found_url = re.sub(r'(#.*)|(\?.*)|(^/$)', '', found_url)
 
-    # remove mailto links
+    # Remove mailto links
     if re.search(r'^mailto', found_url):
         found_url = ""
 
     if len(found_url) > 0:
 
-        # if url is subdirectory link - needs work
+        # If url is subdirectory link concatenate with parent url - needs work
         sub_match = re.match(r'(^http)|(^www.)', found_url)
         if not sub_match:
             found_url = root_url + found_url
 
-        # add forward slash to end of url if ending in .com or a path that doesn't end in a slash
+        # Add forward slash to end of url if ending in .com or a path that doesn't end in a slash
         # (.com)$ finds strings ending in .com
         # ((?<=/)[^.]+[^/]$) finds strings not ending in a filename extension
         if re.search(r'(.com)$|((?<=/)[^.]+[^/]$)', found_url):
             found_url += "/"
 
-        # replace any double forward slashes not following http: or https:
+        # Replace any double forward slashes not following http: or https:
         found_url = re.sub(r'(?<=[^:])//', "/", found_url)
 
     return found_url
@@ -37,18 +46,16 @@ def format_url(found_url, root_url):
 
 def scrape(root_url):
     link_object = link_dict[root_url]
-    # search
 
     # if not first run, download page
-    if not link_object.hasHtml:
+    if not link_object.has_html:
         link_object.get_response()
 
     # if url had valid response, search page for links
     if link_object.valid:
+
         # search
-
-        # (?:<a ).*href=[\"|'](.+?(?=[\'|\"])) captures it in capture group 1
-
+        # (?:<a ).*href=[\"|'](.+?(?=[\'|\"])) captures link in capture group 1
         matches_a_group = re.findall(r'(?:<a ).*href=[\"|\'](.+?(?=[\'|\"]))', link_object.html)
         matches_href = []
 
@@ -63,8 +70,7 @@ def scrape(root_url):
                     matches_href.append(found_url)
 
                     if found_url in link_dict.keys():
-                        pass
-                        # link_dict[found_url].increase_count()
+                        link_dict[found_url].increase_count()
                     else:
                         new_link_object = LinkObject(found_url)
                         link_dict[found_url] = new_link_object
@@ -79,6 +85,7 @@ def scrape(root_url):
                     scrape(match)
 
 
+# Function to print each item in the dictionary of found links
 def finish():
     for key, value in link_dict.items():
         print(key)
@@ -88,42 +95,45 @@ def finish():
             print()
 
 
-def first_url(url):
+# Function used to check whether the initial url provided is able to be visited
+def first_url_check(url):
     link_object = LinkObject(url)
     link_dict[url] = link_object
 
     link_object.get_response()
 
     if link_object.valid:
-        scrape(url)
-        finish()
+        return True
     else:
-        print("Unable to scrape due to the following error with the provided link:\n" + link_object.ErrorReason)
+        print("Unable to scrape due to the following error with the provided link:\n" + link_object.error_reason)
+        return False
 
 
+# Run the program with default settings using the provided url
 def run(url):
-    start = time.time()
-    first_url(url)
-    end = time.time()
-    print("Running time: " + (end - start).__str__())
+    run(url, max_result_count, verbose)
 
 
+# Run the program with the provided url
+# Return the provided number of unique results
 def run(url, result_count):
-    global max_result_count
-    max_result_count = result_count
-    start = time.time()
-    first_url(url)
-    end = time.time()
-    print("Running time: " + (end - start).__str__())
+    run(url, result_count, verbose)
 
 
+# Run the program with the provided url
+# Return the provided number of unique results
+# verbose_flag used to set print detail level
 def run(url, result_count, verbose_flag):
     global max_result_count
     max_result_count = result_count
     global verbose
     verbose = verbose_flag
+
     start = time.time()
-    first_url(url)
+    if first_url_check(url):
+        scrape(url)
+        finish()
+
     end = time.time()
     print("Running time: " + (end - start).__str__())
 
