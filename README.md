@@ -1,7 +1,7 @@
 # Python-Web-Scraper
 This is a basic web scraper written in Python. 
 
-It accepts a starting URL, downloads it,  and from that finds every  `href="http://www.example.com"` inside of a `<a>` tag. It adds each link to a dictionary containing the set of seen links. Finally it performs a recursive depth first search on all returned links in the initial page until it has found a set number of unique links. 
+It accepts a starting URL, downloads it,  and from that finds every  `href="http://www.example.com"` inside of a `<a>` tag. It adds each link to a dictionary containing the set of seen links. Finally it performs a recursive depth first search on all returned links in the initial page until it has found a set number of unique links. Once the search is complete, the links are printed to the screen. 
 
 Each link is filtered to ensure formatting is consistent, and that any relative references are saved as the absolute URI.
 
