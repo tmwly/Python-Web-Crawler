@@ -15,6 +15,9 @@ verbose = False
 # Flag to determine whether ? and # links should be filtered
 just_urls = True
 
+# list used for breadth first to keep track of found items
+link_object_list = []
+
 
 # Function used to format a found url
 # It takes the found url, and the URL of the page where it was found
@@ -52,7 +55,7 @@ def format_url(found_url, parent_url):
     return found_url
 
 
-def scrape(root_url):
+def depth_first_scrape(root_url):
     link_object = link_dict[root_url]
 
     # if not first run, download page
@@ -90,7 +93,7 @@ def scrape(root_url):
 
         for match in matches_href:
             if not link_dict[match].scraped and len(link_dict) < max_result_count:
-                scrape(match)
+                depth_first_scrape(match)
     else:
         pass
 
@@ -105,7 +108,14 @@ def finish():
             print()
 
 
+# clears any found results
+def clear_results():
+    link_dict.clear()
+    link_object_list.clear()
+
+
 # Function used to check whether the initial url provided is able to be visited
+# adds link to link_dict
 def first_url_check(url):
     link_object = LinkObject(url)
     link_dict[url] = link_object
@@ -119,11 +129,50 @@ def first_url_check(url):
         return False
 
 
+def breadth_first_scrape(url):
+    url = format_url(url, "")
+    first_link_object = LinkObject(url)
+    link_dict[url] = first_link_object
+    link_object_list.append(first_link_object)
+
+    for i, current_link_object in enumerate(link_object_list):
+        if len(link_dict) < max_result_count:
+
+            current_link_object.get_response()
+
+            # if url had valid response, search page for links
+            if current_link_object.valid:
+                matches_a_group = re.findall(r'(?<=<a ).+?(?<=href=[\'|\"])(.+?(?=[\'|\"]))', current_link_object.html)
+
+                # add all matches to dictionary or adjust their find count
+                for match in matches_a_group:
+
+                    if len(link_dict) < max_result_count:
+                        found_url = format_url(match, current_link_object.url)
+
+                        if len(found_url) > 0:
+
+                            if found_url not in link_dict.keys():
+
+                                new_link_object = LinkObject(found_url)
+                                link_dict[found_url] = new_link_object
+                                link_object_list.append(new_link_object)
+                    else:
+                        continue    # skip processing if reached count
+
+            else:
+                if len(link_dict) == 0:  # check if first link
+                    print("Unable to scrape due to the following error with the provided link:\n" + current_link_object.error_reason)
+                    break
+        else:
+            break
+
+
 # Run the program with the provided url
 # Return the provided number of unique results
 # verbose_flag used to set print detail level
 # just_url_flag used to set whether search should filter # and ? extensions to urls
-def run(url, result_count, verbose_flag, just_url_flag):
+def run_depth_first(url, result_count, verbose_flag, just_url_flag):
     global max_result_count
     max_result_count = result_count
     global verbose
@@ -134,9 +183,27 @@ def run(url, result_count, verbose_flag, just_url_flag):
     start = time.time()
 
     url = format_url(url, "")
+
     if first_url_check(url):
-        scrape(url)
+        depth_first_scrape(url)
         finish()
+
+    end = time.time()
+    print("Running time: " + (end - start).__str__())
+
+
+def run_breadth_first(url, result_count, verbose_flag, just_url_flag):
+    global max_result_count
+    max_result_count = result_count
+    global verbose
+    verbose = verbose_flag
+    global just_urls
+    just_urls = just_url_flag
+
+    start = time.time()
+
+    breadth_first_scrape(url)
+    finish()
 
     end = time.time()
     print("Running time: " + (end - start).__str__())
