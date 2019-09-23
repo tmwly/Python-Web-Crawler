@@ -55,6 +55,7 @@ def format_url(found_url, parent_url):
     return found_url
 
 
+# recursive depth first scraping algorithm
 def depth_first_scrape(root_url):
     link_object = link_dict[root_url]
 
@@ -129,12 +130,15 @@ def first_url_check(url):
         return False
 
 
+#breadth first scraping algorithm
 def breadth_first_scrape(url):
     url = format_url(url, "")
     first_link_object = LinkObject(url)
     link_dict[url] = first_link_object
     link_object_list.append(first_link_object)
 
+    # loop through enumerate of list to allow adding of links to search
+    # using enumerate is poor for performance but required here
     for i, current_link_object in enumerate(link_object_list):
         if len(link_dict) < max_result_count:
 
@@ -157,6 +161,8 @@ def breadth_first_scrape(url):
                                 new_link_object = LinkObject(found_url)
                                 link_dict[found_url] = new_link_object
                                 link_object_list.append(new_link_object)
+                            else:
+                                link_dict[found_url].increase_count()
                     else:
                         continue    # skip processing if reached count
 
@@ -168,7 +174,7 @@ def breadth_first_scrape(url):
             break
 
 
-# Run the program with the provided url
+# Run the program using a depth first recursive search with the provided url
 # Return the provided number of unique results
 # verbose_flag used to set print detail level
 # just_url_flag used to set whether search should filter # and ? extensions to urls
@@ -192,6 +198,10 @@ def run_depth_first(url, result_count, verbose_flag, just_url_flag):
     print("Running time: " + (end - start).__str__())
 
 
+# Run the program using a breadth first search with the provided url
+# Return the provided number of unique results
+# verbose_flag used to set print detail level
+# just_url_flag used to set whether search should filter # and ? extensions to urls
 def run_breadth_first(url, result_count, verbose_flag, just_url_flag):
     global max_result_count
     max_result_count = result_count
@@ -207,6 +217,16 @@ def run_breadth_first(url, result_count, verbose_flag, just_url_flag):
 
     end = time.time()
     print("Running time: " + (end - start).__str__())
+
+
+# Runs depth first with default config
+def run_default_df(url):
+    run_depth_first(url, 100, False, True)
+
+
+# Runs breadth first with default config
+def run_default_bf(url):
+    run_breadth_first(url, 100, False, True)
 
 
 class Scaper:
